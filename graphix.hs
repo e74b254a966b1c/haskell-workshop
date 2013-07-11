@@ -38,3 +38,12 @@ attachImg tb path (x, y) = do
     img <- imageNewFromFile path
     tableAttach tb img x (x + 1) y (y + 1) [] [] 1 1
     return ((x, y), img)
+
+pacmanHalfPath = [(x, 1) | x <- [5, 4 .. 1]] ++ [(1, y) | y <- [2 .. 5]] ++
+                 [(x, 5) | x <- [2 .. 5]] ++ [(5, y) | y <- [6 .. 9]] ++
+                 [(x, 9) | x <- [4, 3 .. 1]]
+
+pacmanPath = pacmanHalfPath ++ tail (reverse pacmanHalfPath)
+
+ghostPath = [(x, 9) | x <- [1 .. 5]] ++ [(5, y) | y <- [8, 7 .. 1]] ++
+            [(x, 1) | x <- [4, 3 .. 1]] ++ [(1, y) | y <- [2 .. 9]]
