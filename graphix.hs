@@ -26,15 +26,16 @@ populate w = do
     btn <- buttonNewWithLabel "Sart game"
     boxPackStart mainVBox btn PackNatural 5
     table <- tableNew 11 7 True
-    populateTable table
+    images <- populateTable table
+    btn `on` buttonActivated $ newGame images
     boxPackEnd mainVBox table PackGrow 5
     w `containerAdd` mainVBox
-    return ()
+    return (images)
 
 populateTable tb = do
     images <- mapM (attachImg tb "imgs/empty.png") 
                    [(x, y) | x <- [0 .. 6], y <- [0 .. 10]]
-    let roadPositions = [(a, b) | a <- [1, 5], b <- [1 .. 9]] ++ 
+    let roadPositions = [(a, b) | a <- [1, 5], b <- [1 .. 9]] ++
                         [(a, b) | a <- [2, 3, 4], b <- [1, 5, 9]]
     mapM_ (flip imageSetFromFile "imgs/road.png" . snd) $
           filter ((`elem` roadPositions) . fst) images
@@ -42,7 +43,7 @@ populateTable tb = do
           filter (( == (5, 1)) . fst) images
     mapM_ (flip imageSetFromFile "imgs/ghost.png" . snd) $
           filter (( == (1, 9)) . fst) images
-    return ()
+    return images
 
 
 attachImg tb path (x, y) = do
@@ -50,7 +51,12 @@ attachImg tb path (x, y) = do
     tableAttach tb img x (x + 1) y (y + 1) [] [] 1 1
     return ((x, y), img)
 
-evlove state images = do
+newGame images = do
+    ref <- newIORef initState
+    timeoutAdd (evolve ref images) 500
+    return () 
+
+evolve state images = do
     s <- readIORef state
     let newPac = tail $ pacStream s
     let newGhost = tail $ ghostStream s
@@ -61,7 +67,7 @@ evlove state images = do
                    if head newGhost `elem` nFruit then 1 else 0  
     updatePosition (pacStream s) (ghostStream s) newFruit images
     writeIORef state (IORScons newScore newPac newGhost newDanger newFruit)
-    return( (\x y z -> x == y && z) 
+    return $ not ( (\x y z -> x == y && z) 
             (head newPac) (head newGhost) (head newDanger))
 
 updatePosition pac ghost fruit images = do
@@ -71,7 +77,7 @@ updatePosition pac ghost fruit images = do
           filter (( == (head $ tail pac)) . fst) images 
     mapM_ (flip imageSetFromFile "imgs/ghost.png" . snd) $
           filter (( == (head $ tail ghost)) . fst) images
-    mapM_ (flip imageSetFromFile "imgs/ghost.png" . snd) $
+    mapM_ (flip imageSetFromFile "imgs/road.png" . snd) $
           filter ((\x -> x == head pac || x == head ghost) . fst) images
     return()
 
