@@ -71,14 +71,15 @@ evolve state images = do
             (head newPac) (head newGhost) (head newDanger))
 
 updatePosition pac ghost fruit images = do
+    
+    mapM_ (flip imageSetFromFile "imgs/road.png" . snd) $
+          filter ((\x -> x == head pac || x == head ghost) . fst) images
     mapM_ (flip imageSetFromFile "imgs/fruit.png" . snd) $
           filter ((`elem` fruit) . fst) images
     mapM_ (flip imageSetFromFile "imgs/pacman.png" . snd) $
           filter (( == (head $ tail pac)) . fst) images 
     mapM_ (flip imageSetFromFile "imgs/ghost.png" . snd) $
           filter (( == (head $ tail ghost)) . fst) images
-    mapM_ (flip imageSetFromFile "imgs/road.png" . snd) $
-          filter ((\x -> x == head pac || x == head ghost) . fst) images
     return()
 
 pacmanPosition = pacmanPath ++ tail pacmanPosition 
