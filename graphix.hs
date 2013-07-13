@@ -1,5 +1,16 @@
+import Data.IORef (IORef, readIORef, writeIORef, newIORef)
 import Graphics.Rendering.Cairo
 import Graphics.UI.Gtk
+
+data IORState = IORScons
+    { score :: Int
+    , pacStream :: [(Int, Int)]
+    , ghostStream :: [(Int, Int)]
+    , dangerStream :: [Bool]
+    , fruit :: [(Int, Int)]
+    }
+
+initState = IORScons 0 pacmanPosition ghostPosition (dangerous 7) []
 
 main = do
     initGUI
@@ -39,6 +50,31 @@ attachImg tb path (x, y) = do
     tableAttach tb img x (x + 1) y (y + 1) [] [] 1 1
     return ((x, y), img)
 
+evlove state images = do
+    s <- readIORef state
+    let newPac = tail $ pacStream s
+    let newGhost = tail $ ghostStream s
+    let newDanger = tail $ dangerStream s
+    let nFruit = if head newDanger then head newGhost : fruit s else fruit s
+    let newFruit = filter (/= head newPac) nFruit
+    let newScore = (score s) +
+                   if head newGhost `elem` nFruit then 1 else 0  
+    updatePosition (pacStream s) (ghostStream s) newFruit images
+    writeIORef state (IORScons newScore newPac newGhost newDanger newFruit)
+    return( (\x y z -> x == y && z) 
+            (head newPac) (head newGhost) (head newDanger))
+
+updatePosition pac ghost fruit images = do
+    mapM_ (flip imageSetFromFile "imgs/fruit.png" . snd) $
+          filter ((`elem` fruit) . fst) images
+    mapM_ (flip imageSetFromFile "imgs/pacman.png" . snd) $
+          filter (( == (head $ tail pac)) . fst) images 
+    mapM_ (flip imageSetFromFile "imgs/ghost.png" . snd) $
+          filter (( == (head $ tail ghost)) . fst) images
+    mapM_ (flip imageSetFromFile "imgs/ghost.png" . snd) $
+          filter ((\x -> x == head pac || x == head ghost) . fst) images
+    return()
+
 pacmanPosition = pacmanPath ++ tail pacmanPosition 
                  where pacmanPath = 
                            pacmanHalfPath ++ 
@@ -55,3 +91,7 @@ ghostPosition = ghostPath ++ tail ghostPosition
                                   [(5, y) | y <- [8, 7 .. 1]] ++
                                   [(x, 1) | x <- [4, 3 .. 1]] ++
                                   [(1, y) | y <- [2 .. 9]]
+
+dangerous n = frankfurt 
+                  where frankfurt =
+                         ((take (n - 1) $ repeat False) ++ [True]) ++ frankfurt
