@@ -64,13 +64,15 @@ evolve state images = do
     let nFruit = if head newDanger then head newGhost : fruit s else fruit s
     let newFruit = filter (/= head newPac) nFruit
     let newScore = (score s) +
-                   if head newGhost `elem` nFruit then 1 else 0  
-    updatePosition (pacStream s) (ghostStream s) newFruit images
+                   if head newGhost `elem` nFruit then 1 else 0
+    let dangerNow = head newDanger
+    let updateScreen = if dangerNow then (updatePosition "imgs/danger.png")
+                                    else (updatePosition "imgs/ghost.png")
+    updateScreen (pacStream s) (ghostStream s) newFruit images
     writeIORef state (IORScons newScore newPac newGhost newDanger newFruit)
-    return $ not ( (\x y z -> x == y && z) 
-            (head newPac) (head newGhost) (head newDanger))
+    return $ not ((\x y -> x == y && dangerNow) (head newPac) (head newGhost))
 
-updatePosition pac ghost fruit images = do
+updatePosition ghostImg pac ghost fruit images = do
     
     mapM_ (flip imageSetFromFile "imgs/road.png" . snd) $
           filter ((\x -> x == head pac || x == head ghost) . fst) images
@@ -78,7 +80,7 @@ updatePosition pac ghost fruit images = do
           filter ((`elem` fruit) . fst) images
     mapM_ (flip imageSetFromFile "imgs/pacman.png" . snd) $
           filter (( == (head $ tail pac)) . fst) images 
-    mapM_ (flip imageSetFromFile "imgs/ghost.png" . snd) $
+    mapM_ (flip imageSetFromFile ghostImg . snd) $
           filter (( == (head $ tail ghost)) . fst) images
     return()
 
